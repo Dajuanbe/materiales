@@ -1,0 +1,216 @@
+function visualizarOrbital(ax_handle, tipoOrbital)
+    % VISUALIZARORBITAL Genera una visualización 3D en un eje de app designer.
+    %
+    % ENTRADA:
+    %   ax_handle: El handle del UIAxes (ej. app.grafica)
+    %   tipoOrbital: Un string que define el orbital (ej. 's', 'sp3')
+
+    fprintf('Preparando visualización para el orbital: %s\n', tipoOrbital);
+
+    % --- 1. Limpiar y Preparar Ejes ---
+    % Limpia el eje específico y lo resetea
+    cla(ax_handle, 'reset'); 
+    hold(ax_handle, 'on');   % Activa hold en ese eje
+
+    % --- 2. Parámetros Generales ---
+    n_puntos_surf = 50;
+    [U, V] = meshgrid(linspace(0, 2*pi, n_puntos_surf), linspace(0, pi, n_puntos_surf));
+    lim_iso_s = 6;
+    n_puntos_iso_s = 100;
+    
+    % --- 3. Cálculo y Renderizado ---
+    % Todos los comandos de ploteo ahora apuntan a 'ax_handle'
+    
+    switch lower(tipoOrbital)
+        case 's'
+            fprintf('Calculando orbital "s" (isosurface)...\n');
+            eje_s = linspace(-lim_iso_s, lim_iso_s, n_puntos_iso_s);
+            [X, Y, Z] = meshgrid(eje_s, eje_s, eje_s);
+            R = sqrt(X.^2 + Y.^2 + Z.^2);
+            Psi = exp(-R); 
+            isovalor = 0.04;
+            p = patch(ax_handle, isosurface(X, Y, Z, Psi, isovalor)); % <--- CAMBIO
+            p.FaceColor = 'red'; p.EdgeColor = 'none'; p.FaceAlpha = 0.8;
+
+        case 'px'
+            fprintf('Calculando orbital "px" (geométrico)...\n');
+            a = 5; b = 3; c = 3;
+            X_base = a * cos(V); Y_base = b * cos(U) .* sin(V); Z_base = c * sin(U) .* sin(V);
+            s1 = surf(ax_handle, a + X_base, Y_base, Z_base); % <--- CAMBIO
+            s1.FaceColor = 'red'; s1.EdgeColor = 'none'; s1.FaceAlpha = 0.8;
+            s2 = surf(ax_handle, -a + X_base, Y_base, Z_base); % <--- CAMBIO
+            s2.FaceColor = 'blue'; s2.EdgeColor = 'none'; s2.FaceAlpha = 0.8;
+            
+        case 'py'
+            fprintf('Calculando orbital "py" (geométrico)...\n');
+            a = 3; b = 5; c = 3;
+            X_base = a * cos(U) .* sin(V); Y_base = b * cos(V); Z_base = c * sin(U) .* sin(V);
+            s1 = surf(ax_handle, X_base, b + Y_base, Z_base); % <--- CAMBIO
+            s1.FaceColor = 'red'; s1.EdgeColor = 'none'; s1.FaceAlpha = 0.8;
+            s2 = surf(ax_handle, X_base, -b + Y_base, Z_base); % <--- CAMBIO
+            s2.FaceColor = 'blue'; s2.EdgeColor = 'none'; s2.FaceAlpha = 0.8;
+
+        case 'pz'
+            fprintf('Calculando orbital "pz" (geométrico)...\n');
+            a = 3; b = 3; c = 5;
+            X_base = a * cos(U) .* sin(V); Y_base = b * sin(U) .* sin(V); Z_base = c * cos(V);
+            s1 = surf(ax_handle, X_base, Y_base, c + Z_base); % <--- CAMBIO
+            s1.FaceColor = 'red'; s1.EdgeColor = 'none'; s1.FaceAlpha = 0.8;
+            s2 = surf(ax_handle, X_base, Y_base, -c + Z_base); % <--- CAMBIO
+            s2.FaceColor = 'blue'; s2.EdgeColor = 'none'; s2.FaceAlpha = 0.8;
+
+        case 's2'
+            fprintf('Calculando enlace "s2" (geométrico)...\n');
+            a = 7; b = 4; c = 4;
+            X_s2 = a * cos(U) .* sin(V); Y_s2 = b * sin(U) .* sin(V); Z_s2 = c * cos(V);
+            s1 = surf(ax_handle, X_s2, Y_s2, Z_s2); % <--- CAMBIO
+            s1.FaceColor = [0.4 0.7 1.0]; s1.EdgeColor = 'none'; s1.FaceAlpha = 0.8;
+            
+        case 'sp'
+            fprintf('Calculando hibridación "sp" (solo híbridos)...\n');
+            lim_iso_sp = 8; n_puntos_iso_sp = 100;
+            eje_sp = linspace(-lim_iso_sp, lim_iso_sp, n_puntos_iso_sp);
+            [X_sp, Y_sp, Z_sp] = meshgrid(eje_sp, eje_sp, eje_sp);
+            r_punzon = 2.0; c_punzon = [0, 0, 0]; 
+            F_punzon = (X_sp - c_punzon(1)).^2 + (Y_sp - c_punzon(2)).^2 + (Z_sp - c_punzon(3)).^2 - r_punzon^2;
+            r_blue = 3.5;
+            c_blue1 = [-4, 0, 0]; F_blue1 = (X_sp - c_blue1(1)).^2 + (Y_sp - c_blue1(2)).^2 + (Z_sp - c_blue1(3)).^2 - r_blue^2;
+            c_blue2 = [4, 0, 0]; F_blue2 = (X_sp - c_blue2(1)).^2 + (Y_sp - c_blue2(2)).^2 + (Z_sp - c_blue2(3)).^2 - r_blue^2;
+            Psi_azules = min(max(F_blue1, -F_punzon), max(F_blue2, -F_punzon));
+            p = patch(ax_handle, isosurface(X_sp, Y_sp, Z_sp, Psi_azules, 0)); % <--- CAMBIO
+            p.FaceColor = 'blue'; p.EdgeColor = 'none'; p.FaceAlpha = 0.7;
+            r_naranja_visible = 1.5; 
+            X_naranja = c_punzon(1) + r_naranja_visible * cos(U) .* sin(V);
+            Y_naranja = c_punzon(2) + r_naranja_visible * sin(U) .* sin(V);
+            Z_naranja = c_punzon(3) + r_naranja_visible * cos(V);
+            s_naranja = surf(ax_handle, X_naranja, Y_naranja, Z_naranja); % <--- CAMBIO
+            s_naranja.FaceColor = [1.0, 0.5, 0.0]; s_naranja.EdgeColor = 'none'; s_naranja.FaceAlpha = 0.7;
+            
+        case 'sp_completo'
+            fprintf('Calculando hibridación "sp" completa...\n');
+            % ... (copiar código de 'sp')
+            lim_iso_sp = 8; n_puntos_iso_sp = 100;
+            eje_sp = linspace(-lim_iso_sp, lim_iso_sp, n_puntos_iso_sp);
+            [X_sp, Y_sp, Z_sp] = meshgrid(eje_sp, eje_sp, eje_sp);
+            r_punzon = 2.0; c_punzon = [0, 0, 0]; F_punzon = (X_sp - c_punzon(1)).^2 + (Y_sp - c_punzon(2)).^2 + (Z_sp - c_punzon(3)).^2 - r_punzon^2;
+            r_blue = 3.5;
+            c_blue1 = [-4, 0, 0]; F_blue1 = (X_sp - c_blue1(1)).^2 + (Y_sp - c_blue1(2)).^2 + (Z_sp - c_blue1(3)).^2 - r_blue^2;
+            c_blue2 = [4, 0, 0]; F_blue2 = (X_sp - c_blue2(1)).^2 + (Y_sp - c_blue2(2)).^2 + (Z_sp - c_blue2(3)).^2 - r_blue^2;
+            Psi_azules = min(max(F_blue1, -F_punzon), max(F_blue2, -F_punzon));
+            p = patch(ax_handle, isosurface(X_sp, Y_sp, Z_sp, Psi_azules, 0)); % <--- CAMBIO
+            p.FaceColor = 'blue'; p.EdgeColor = 'none'; p.FaceAlpha = 0.7;
+            r_naranja_visible = 1.5; 
+            X_naranja = c_punzon(1) + r_naranja_visible * cos(U) .* sin(V); Y_naranja = c_punzon(2) + r_naranja_visible * sin(U) .* sin(V); Z_naranja = c_punzon(3) + r_naranja_visible * cos(V);
+            s_naranja = surf(ax_handle, X_naranja, Y_naranja, Z_naranja); % <--- CAMBIO
+            s_naranja.FaceColor = [1.0, 0.5, 0.0]; s_naranja.EdgeColor = 'none'; s_naranja.FaceAlpha = 0.7;
+            % ... (Añadir 'p' puros)
+            a_py = 1.5; b_py = 4; c_py = 1.5; 
+            X_base_py = a_py * cos(U) .* sin(V); Y_base_py = b_py * cos(V); Z_base_py = c_py * sin(U) .* sin(V);
+            s_py1 = surf(ax_handle, X_base_py, b_py + Y_base_py, Z_base_py); % <--- CAMBIO
+            s_py1.FaceColor = 'green'; s_py1.EdgeColor = 'none'; s_py1.FaceAlpha = 0.7;
+            s_py2 = surf(ax_handle, X_base_py, -b_py + Y_base_py, Z_base_py); % <--- CAMBIO
+            s_py2.FaceColor = 'magenta'; s_py2.EdgeColor = 'none'; s_py2.FaceAlpha = 0.7;
+            a_pz = 1.5; b_pz = 1.5; c_pz = 4;
+            X_base_pz = a_pz * cos(U) .* sin(V); Y_base_pz = b_pz * sin(U) .* sin(V); Z_base_pz = c_pz * cos(V);
+            s_pz1 = surf(ax_handle, X_base_pz, Y_base_pz, c_pz + Z_base_pz); % <--- CAMBIO
+            s_pz1.FaceColor = 'green'; s_pz1.EdgeColor = 'none'; s_pz1.FaceAlpha = 0.7;
+            s_pz2 = surf(ax_handle, X_base_pz, Y_base_pz, -c_pz + Z_base_pz); % <--- CAMBIO
+            s_pz2.FaceColor = 'magenta'; s_pz2.EdgeColor = 'none'; s_pz2.FaceAlpha = 0.7;
+            
+        case 'sp2'
+            fprintf('Calculando hibridación "sp2" (solo híbridos)...\n');
+            lim_iso_sp2 = 8; n_puntos_iso_sp2 = 100;
+            eje_sp2 = linspace(-lim_iso_sp2, lim_iso_sp2, n_puntos_iso_sp2);
+            [X_sp2, Y_sp2, Z_sp2] = meshgrid(eje_sp2, eje_sp2, eje_sp2);
+            r_punzon = 2.0; c_punzon = [0, 0, 0]; 
+            F_punzon = (X_sp2 - c_punzon(1)).^2 + (Y_sp2 - c_punzon(2)).^2 + (Z_sp2 - c_punzon(3)).^2 - r_punzon^2;
+            r_blue = 3.5; d_blue = 4.5;
+            c_blue1 = [d_blue, 0, 0];
+            F_blue1 = (X_sp2 - c_blue1(1)).^2 + (Y_sp2 - c_blue1(2)).^2 + (Z_sp2 - c_blue1(3)).^2 - r_blue^2;
+            c_blue2 = [d_blue * cosd(120), d_blue * sind(120), 0];
+            F_blue2 = (X_sp2 - c_blue2(1)).^2 + (Y_sp2 - c_blue2(2)).^2 + (Z_sp2 - c_blue2(3)).^2 - r_blue^2;
+            c_blue3 = [d_blue * cosd(240), d_blue * sind(240), 0];
+            F_blue3 = (X_sp2 - c_blue3(1)).^2 + (Y_sp2 - c_blue3(2)).^2 + (Z_sp2 - c_blue3(3)).^2 - r_blue^2;
+            Psi_azules = min(min(max(F_blue1, -F_punzon), max(F_blue2, -F_punzon)), max(F_blue3, -F_punzon));
+            p = patch(ax_handle, isosurface(X_sp2, Y_sp2, Z_sp2, Psi_azules, 0)); % <--- CAMBIO
+            p.FaceColor = 'blue'; p.EdgeColor = 'none'; p.FaceAlpha = 0.7;
+            r_naranja_visible = 1.5; 
+            X_naranja = c_punzon(1) + r_naranja_visible * cos(U) .* sin(V); Y_naranja = c_punzon(2) + r_naranja_visible * sin(U) .* sin(V); Z_naranja = c_punzon(3) + r_naranja_visible * cos(V);
+            s_naranja = surf(ax_handle, X_naranja, Y_naranja, Z_naranja); % <--- CAMBIO
+            s_naranja.FaceColor = [1.0, 0.5, 0.0]; s_naranja.EdgeColor = 'none'; s_naranja.FaceAlpha = 0.7;
+
+        case 'sp2_completo'
+            fprintf('Calculando hibridación "sp2" completa...\n');
+            % ... (copiar código de 'sp2')
+            lim_iso_sp2 = 8; n_puntos_iso_sp2 = 100;
+            eje_sp2 = linspace(-lim_iso_sp2, lim_iso_sp2, n_puntos_iso_sp2);
+            [X_sp2, Y_sp2, Z_sp2] = meshgrid(eje_sp2, eje_sp2, eje_sp2);
+            r_punzon = 2.0; c_punzon = [0, 0, 0]; F_punzon = (X_sp2 - c_punzon(1)).^2 + (Y_sp2 - c_punzon(2)).^2 + (Z_sp2 - c_punzon(3)).^2 - r_punzon^2;
+            r_blue = 3.5; d_blue = 4.5;
+            c_blue1 = [d_blue, 0, 0]; F_blue1 = (X_sp2 - c_blue1(1)).^2 + (Y_sp2 - c_blue1(2)).^2 + (Z_sp2 - c_blue1(3)).^2 - r_blue^2;
+            c_blue2 = [d_blue * cosd(120), d_blue * sind(120), 0]; F_blue2 = (X_sp2 - c_blue2(1)).^2 + (Y_sp2 - c_blue2(2)).^2 + (Z_sp2 - c_blue2(3)).^2 - r_blue^2;
+            c_blue3 = [d_blue * cosd(240), d_blue * sind(240), 0]; F_blue3 = (X_sp2 - c_blue3(1)).^2 + (Y_sp2 - c_blue3(2)).^2 + (Z_sp2 - c_blue3(3)).^2 - r_blue^2;
+            Psi_azules = min(min(max(F_blue1, -F_punzon), max(F_blue2, -F_punzon)), max(F_blue3, -F_punzon));
+            p = patch(ax_handle, isosurface(X_sp2, Y_sp2, Z_sp2, Psi_azules, 0)); % <--- CAMBIO
+            p.FaceColor = 'blue'; p.EdgeColor = 'none'; p.FaceAlpha = 0.7;
+            r_naranja_visible = 1.5; 
+            X_naranja = c_punzon(1) + r_naranja_visible * cos(U) .* sin(V); Y_naranja = c_punzon(2) + r_naranja_visible * sin(U) .* sin(V); Z_naranja = c_punzon(3) + r_naranja_visible * cos(V);
+            s_naranja = surf(ax_handle, X_naranja, Y_naranja, Z_naranja); % <--- CAMBIO
+            s_naranja.FaceColor = [1.0, 0.5, 0.0]; s_naranja.EdgeColor = 'none'; s_naranja.FaceAlpha = 0.7;
+            % ... (Añadir 'pz' puro)
+            a_pz = 1.5; b_pz = 1.5; c_pz = 5; 
+            X_base_pz = a_pz * cos(U) .* sin(V); Y_base_pz = b_pz * sin(U) .* sin(V); Z_base_pz = c_pz * cos(V);
+            s_pz1 = surf(ax_handle, X_base_pz, Y_base_pz, c_pz + Z_base_pz); 
+            s_pz1.FaceColor = 'green'; s_pz1.EdgeColor = 'none'; s_pz1.FaceAlpha = 0.7;
+            s_pz2 = surf(ax_handle, X_base_pz, Y_base_pz, -c_pz + Z_base_pz); 
+            s_pz2.FaceColor = 'magenta'; s_pz2.EdgeColor = 'none'; s_pz2.FaceAlpha = 0.7;
+
+        case 'sp3'
+            fprintf('Calculando hibridación "sp3" (tetraédrica)...\n');
+            lim_iso_sp3 = 8; n_puntos_iso_sp3 = 100;
+            eje_sp3 = linspace(-lim_iso_sp3, lim_iso_sp3, n_puntos_iso_sp3);
+            [X_sp3, Y_sp3, Z_sp3] = meshgrid(eje_sp3, eje_sp3, eje_sp3);
+            r_punzon = 2.0; c_punzon = [0, 0, 0]; 
+            F_punzon = (X_sp3 - c_punzon(1)).^2 + (Y_sp3 - c_punzon(2)).^2 + (Z_sp3 - c_punzon(3)).^2 - r_punzon^2;
+            r_blue = 3.5; d_blue = 4.0;
+            c_blue1 = d_blue * [1, 1, 1] / sqrt(3);
+            F_blue1 = (X_sp3 - c_blue1(1)).^2 + (Y_sp3 - c_blue1(2)).^2 + (Z_sp3 - c_blue1(3)).^2 - r_blue^2;
+            c_blue2 = d_blue * [1, -1, -1] / sqrt(3);
+            F_blue2 = (X_sp3 - c_blue2(1)).^2 + (Y_sp3 - c_blue2(2)).^2 + (Z_sp3 - c_blue2(3)).^2 - r_blue^2;
+            c_blue3 = d_blue * [-1, 1, -1] / sqrt(3);
+            F_blue3 = (X_sp3 - c_blue3(1)).^2 + (Y_sp3 - c_blue3(2)).^2 + (Z_sp3 - c_blue3(3)).^2 - r_blue^2;
+            c_blue4 = d_blue * [-1, -1, 1] / sqrt(3);
+            F_blue4 = (X_sp3 - c_blue4(1)).^2 + (Y_sp3 - c_blue4(2)).^2 + (Z_sp3 - c_blue4(3)).^2 - r_blue^2;
+            Psi_azules = min(min(max(F_blue1, -F_punzon), max(F_blue2, -F_punzon)), min(max(F_blue3, -F_punzon), max(F_blue4, -F_punzon)));
+            p = patch(ax_handle, isosurface(X_sp3, Y_sp3, Z_sp3, Psi_azules, 0)); 
+            p.FaceColor = 'blue'; p.EdgeColor = 'none'; p.FaceAlpha = 0.7;
+            r_naranja_visible = 1.5; 
+            X_naranja = c_punzon(1) + r_naranja_visible * cos(U) .* sin(V); Y_naranja = c_punzon(2) + r_naranja_visible * sin(U) .* sin(V); Z_naranja = c_punzon(3) + r_naranja_visible * cos(V);
+            s_naranja = surf(ax_handle, X_naranja, Y_naranja, Z_naranja); 
+            s_naranja.FaceColor = [1.0, 0.5, 0.0]; s_naranja.EdgeColor = 'none'; s_naranja.FaceAlpha = 0.7;
+
+        otherwise
+            warning('Tipo de orbital no reconocido: %s', tipoOrbital);
+            title(ax_handle, ['Error: Orbital no reconocido "' tipoOrbital '"']); 
+            axis(ax_handle, 'off');
+    end
+
+    % --- 4. Ajustes Visuales Finales ---
+    if exist('p', 'var') || exist('s1', 'var') || exist('s_naranja', 'var')
+        title(ax_handle, ['Visualización del Orbital: ' tipoOrbital], 'FontSize', 14);
+        xlabel(ax_handle, 'Eje X');
+        ylabel(ax_handle, 'Eje Y');
+        zlabel(ax_handle, 'Eje Z');
+        
+        axis(ax_handle, 'equal');     
+        grid(ax_handle, 'on');        
+        view(ax_handle, 3);        
+        % rotate3d on; % (app.grafica lo maneja por defecto)
+        
+        camlight(ax_handle);       
+        lighting(ax_handle, 'phong'); 
+    end
+
+    hold(ax_handle, 'off'); 
+    fprintf('¡Visualización completada!\n');
+end
