@@ -1,0 +1,183 @@
+classdef materiales_aplicacion_converted < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure        matlab.ui.Figure
+        GridLayout      matlab.ui.container.GridLayout
+        LeftPanel       matlab.ui.container.Panel
+        opcion          matlab.ui.control.DropDown
+        GraficarButton  matlab.ui.control.Button
+        TextArea        matlab.ui.control.TextArea
+        RightPanel      matlab.ui.container.Panel
+        grafica         matlab.ui.control.UIAxes
+    end
+
+    % Properties that correspond to apps with auto-reflow
+    properties (Access = private)
+        onePanelWidth = 576;
+    end
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Button pushed function: GraficarButton
+        function GraficarButtonPushed(app, event)
+
+            
+            % 1. Obtener el TEXTO seleccionado (ej. "1. Orbital s")
+            opcionTexto = app.opcion.Value;
+            
+            % 2. EXTRAER el NÚMERO del texto
+            %    sscanf() lee el primer número que encuentra.
+            opcionNum = sscanf(opcionTexto, '%d');
+            
+            % 3. Traducir el número al string que espera la función
+            switch opcionNum
+                case 1
+                    tipoOrbital = 's';
+                case 2
+                    tipoOrbital = 'px';
+                case 3
+                    tipoOrbital = 'py';
+                case 4
+                    tipoOrbital = 'pz';
+                case 5
+                    tipoOrbital = 's2';
+                case 6
+                    tipoOrbital = 'sp';
+                case 7
+                    tipoOrbital = 'sp_completo';
+                case 8
+                    tipoOrbital = 'sp2';
+                case 9
+                    tipoOrbital = 'sp2_completo';
+                case 10
+                    tipoOrbital = 'sp3';
+                otherwise
+                    % Si sscanf falla (devuelve vacío), mostramos error
+                    uialert(app.UIFigure, ...
+                        ['Opción no reconocida: "' opcionTexto '"'], ...
+                        'Error de Selección');
+                    return; 
+            end
+
+            % 4. Llamar a la función de visualización
+            try
+                % Llamamos a la función y le pasamos el eje de la app
+                visualizarOrbital(app.grafica, tipoOrbital);
+            catch ME
+                % Manejo de errores
+                uialert(app.UIFigure, ['Error al graficar: ' ME.message], 'Error');
+            end
+            
+            fprintf('Callback ejecutado para: %s (Opción %d)\n', tipoOrbital, opcionNum);
+        
+        end
+
+        % Changes arrangement of the app based on UIFigure width
+        function updateAppLayout(app, event)
+            currentFigureWidth = app.UIFigure.Position(3);
+            if(currentFigureWidth <= app.onePanelWidth)
+                % Change to a 2x1 grid
+                app.GridLayout.RowHeight = {533, 533};
+                app.GridLayout.ColumnWidth = {'1x'};
+                app.RightPanel.Layout.Row = 2;
+                app.RightPanel.Layout.Column = 1;
+            else
+                % Change to a 1x2 grid
+                app.GridLayout.RowHeight = {'1x'};
+                app.GridLayout.ColumnWidth = {322, '1x'};
+                app.RightPanel.Layout.Row = 1;
+                app.RightPanel.Layout.Column = 2;
+            end
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create UIFigure and hide until all components are created
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.AutoResizeChildren = 'off';
+            app.UIFigure.Color = [0.149 0.149 0.149];
+            app.UIFigure.Position = [100 100 935 533];
+            app.UIFigure.Name = 'MATLAB App';
+            app.UIFigure.Theme = 'dark';
+
+            % Create GridLayout
+            app.GridLayout = uigridlayout(app.UIFigure);
+            app.GridLayout.ColumnWidth = {322, '1x'};
+            app.GridLayout.RowHeight = {'1x'};
+            app.GridLayout.ColumnSpacing = 0;
+            app.GridLayout.RowSpacing = 0;
+            app.GridLayout.Padding = [0 0 0 0];
+            app.GridLayout.Scrollable = 'on';
+
+            % Create LeftPanel
+            app.LeftPanel = uipanel(app.GridLayout);
+            app.LeftPanel.Layout.Row = 1;
+            app.LeftPanel.Layout.Column = 1;
+
+            % Create TextArea
+            app.TextArea = uitextarea(app.LeftPanel);
+            app.TextArea.Position = [34 323 277 197];
+            app.TextArea.Value = {'  ORBITALES ATÓMICOS PUROS:'; '    1.  Orbital s'; '    2.  Orbital px'; '    3.  Orbital py'; '    4.  Orbital pz'; '    5.  Enlace s2 (sigma)'; ''; '  HIBRIDACIONES:'; '    6.  Hibridación sp (solo híbridos)'; '    7.  Hibridación sp completa (sp + py + pz)'; '    8.  Hibridación sp2 (solo híbridos)'; '    9.  Hibridación sp2 completa (sp2 + pz)'; '    10. Hibridación sp3 (tetraédrica)'; ''};
+
+            % Create GraficarButton
+            app.GraficarButton = uibutton(app.LeftPanel, 'push');
+            app.GraficarButton.ButtonPushedFcn = createCallbackFcn(app, @GraficarButtonPushed, true);
+            app.GraficarButton.Position = [117 114 91 47];
+            app.GraficarButton.Text = 'Graficar';
+
+            % Create opcion
+            app.opcion = uidropdown(app.LeftPanel);
+            app.opcion.Items = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'};
+            app.opcion.Position = [117 228 100 22];
+            app.opcion.Value = '0';
+
+            % Create RightPanel
+            app.RightPanel = uipanel(app.GridLayout);
+            app.RightPanel.Layout.Row = 1;
+            app.RightPanel.Layout.Column = 2;
+
+            % Create grafica
+            app.grafica = uiaxes(app.RightPanel);
+            title(app.grafica, 'Title')
+            xlabel(app.grafica, 'X')
+            ylabel(app.grafica, 'Y')
+            zlabel(app.grafica, 'Z')
+            app.grafica.Position = [22 65 571 422];
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = materiales_aplicacion_converted
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end
